@@ -80,9 +80,6 @@ def register():
 
 @app.route('/login', methods=["POST"])
 def login():
-
-
-
     mysql = connectToMySQL('login_and_register')
 
     query = "SELECT id, email, pw_hash FROM accounts WHERE email=%(email)s;"
@@ -102,16 +99,24 @@ def login():
 
 @app.route('/success')
 def success():
-    mysql = connectToMySQL('login_and_register')
+    if 'current_user_id' not in session:
+        return redirect('/')
+    else:
+        mysql = connectToMySQL('login_and_register')
 
-    query = "SELECT first_name FROM accounts WHERE id=%(id)s;"
+        query = "SELECT first_name FROM accounts WHERE id=%(id)s;"
 
-    data = {
-        "id": session['current_user_id']
-    }
-    welcome = mysql.query_db(query, data)
+        data = {
+            "id": session['current_user_id']
+        }
+        welcome = mysql.query_db(query, data)
 
-    return render_template('success.html', name=welcome)
+        return render_template('success.html', name=welcome)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
 
 if __name__ == '__main__':
     app.run(debug=True)

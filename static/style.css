@@ -8,7 +8,6 @@
     width: 300px;
     height: auto;
     border: 1px solid red;
-    padding: 10px;
     background-image: linear-gradient(rgb(255, 162, 162), rgb(255, 228, 228), rgb(255, 162, 162))
 }
 .main {
@@ -40,10 +39,14 @@ h2 {
     margin: 25px 0px 0px 10px;
 }
 .d {
-    width: 8%;
-    margin-left: 90%;
+    width: 12%;
+    margin-left: 50%;
 }
 .fail {
     margin: 10px;
     padding: 10px;
+}
+h3 {
+    display: inline-block;
+    width: 30%;
 }

@@ -15,7 +15,7 @@ def index():
 @app.route('/register', methods=["POST"])
 def register():
 
-    mysql = connectToMySQL('login_and_register')
+    mysql = connectToMySQL('private_wall')
 
     if request.form['first_name'] == "":
         flash("First name is required.")
@@ -55,7 +55,7 @@ def register():
         return redirect('/')
 
     else:
-        mysql = connectToMySQL('login_and_register')
+        mysql = connectToMySQL('private_wall')
 
         pw_hash = bcrypt.generate_password_hash(request.form['password'])
         print(pw_hash)
@@ -80,7 +80,7 @@ def register():
 
 @app.route('/login', methods=["POST"])
 def login():
-    mysql = connectToMySQL('login_and_register')
+    mysql = connectToMySQL('private_wall')
 
     query = "SELECT id, email, pw_hash FROM accounts WHERE email=%(email)s;"
 
@@ -102,21 +102,70 @@ def success():
     if 'current_user_id' not in session:
         return redirect('/')
     else:
-        mysql = connectToMySQL('login_and_register')
+        mysql = connectToMySQL('private_wall')
 
-        query = "SELECT first_name FROM accounts WHERE id=%(id)s;"
+        query = "SELECT * FROM accounts WHERE id=%(id)s;"
 
         data = {
             "id": session['current_user_id']
         }
         welcome = mysql.query_db(query, data)
 
-        return render_template('success.html', name=welcome)
+        mysql = connectToMySQL('private_wall')
+
+        all_users = mysql.query_db("SELECT * FROM accounts;")
+
+        mysql = connectToMySQL('private_wall')
+
+        sent_messages = mysql.query_db("SELECT messages.id, accounts.first_name, accounts.last_name, messages.content, messages.created_at FROM accounts JOIN messages ON accounts.id = messages.recipient_id WHERE messages.sender_id = %(id)s ORDER BY messages.created_at DESC;", {"id": session['current_user_id']})
+
+        mysql = connectToMySQL('private_wall')
+
+        received_messages = mysql.query_db("SELECT messages.id, accounts.first_name, accounts.last_name, messages.content, messages.created_at FROM accounts JOIN messages ON accounts.id = messages.sender_id WHERE messages.recipient_id = %(id)s ORDER BY messages.created_at DESC;", {"id": session['current_user_id']})
+        
+
+        return render_template('wall.html', name=welcome, list=all_users, sent_messages=sent_messages, received_messages=received_messages)
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
+
+@app.route('/send_message', methods=["POST"])
+def send():
+    if len(request.form['message']) < 2:
+        flash("Your message is too short.")
+    if request.form['recipient'] == 'default':
+        flash("Please choose a recipient.")
+    if '_flashes' in session.keys():
+        return redirect('/success')
+    else:
+        mysql = connectToMySQL('private_wall')
+
+        query = "INSERT INTO messages (sender_id, recipient_id, content, created_at, updated_at) VALUES (%(sender)s, %(recipient)s, %(content)s, NOW(), NOW());"
+
+        data = {
+            "sender": session['current_user_id'],
+            "recipient": request.form['recipient'],
+            "content": request.form['message']
+        }
+        new_message = mysql.query_db(query, data)
+
+        return redirect('/success')
+
+@app.route('/delete_message/<id>')
+def delete_message(id):
+    mysql = connectToMySQL('private_wall')
+
+    query = "DELETE FROM messages WHERE id=%(message_id)s;"
+
+    data = {
+        "message_id": id
+    }
+
+    message_id_delete = mysql.query_db(query, data)
+
+    return redirect('/success')
 
 if __name__ == '__main__':
     app.run(debug=True)
